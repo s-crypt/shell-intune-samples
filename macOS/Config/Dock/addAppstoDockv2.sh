@@ -54,6 +54,29 @@ echo "The script is running under the user: $scriptRunningAs"
 echo "The current desktop user is: $desktopUser"
 echo "The current desktop users home directory is: $desktopUserHomeDirectory" 
 
+# Find a logged-in non-system user
+while :; do
+  # Get the list of logged-in users excluding those starting with an underscore
+  loggedInUser=$(users | tr ' ' '\n' | grep -v "^_" | uniq)
+
+  # If a user exists and is not _mbsetupuser
+  if [[ "$loggedInUser" && "$loggedInUser" != "_mbsetupuser" ]]; then
+    desktopUser="$loggedInUser"
+    break # Exit the loop if there is a non-system user
+  fi
+
+  # Sleep for a short period before checking again
+  echo "Waiting for a user to log in..."
+  sleep 10
+done
+
+# Determine the new user's home directory
+desktopUserHomeDirectory=$(dscl . -read "/Users/$desktopUser" NFSHomeDirectory | cut -d " " -f 2)
+
+# Now switch to the new user as the active user
+echo "Switching to the new user: $desktopUser"
+echo "The new user's home directory is: $desktopUserHomeDirectory"
+
 # Check if an script has already run before
 if [[ -f "$desktopUserHomeDirectory/Library/Logs/prepareDock" ]]; then
 
